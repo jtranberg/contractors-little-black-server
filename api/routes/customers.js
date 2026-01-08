@@ -1,7 +1,7 @@
 // routes/customers.js
 const router = require("express").Router();
 const Customer = require("../models/Customer");
-const auth = require("../middleware/auth");
+const auth = require("../middleware/requiredAuth");
 
 router.post("/", auth, async (req, res) => {
   try {
