@@ -1,59 +1,74 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const Customer = require("../models/Customer");
-const requireAuth = require("../middleware/requireAuth");
+const requireAuth = require("../middleware/requireAuth"); // adjust if your path differs
 
 const router = express.Router();
 
-/** ✅ MUST be before "/:id" routes */
-router.get("/search", requireAuth, async (req, res) => {
+/**
+ * POST /api/customers
+ * Create a customer for the logged-in user
+ */
+router.post("/", requireAuth, async (req, res) => {
   try {
-    const q = (req.query.query || "").trim();
-    if (!q) return res.status(400).json({ error: "query is required" });
+    const ownerId = req.user.userId;
 
-    // escape regex input
-    const safe = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(safe, "i");
+    const { name, contact = "", issue = "", notes = "" } = req.body || {};
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: "Name is required" });
+    }
 
-    const results = await Customer.find({
-      ownerId: req.user.userId, // keep searches per-user (recommended)
-      $or: [
-        { name: regex },
-        { contact: regex },
-        { issue: regex },
-        { notes: regex },
-      ],
-    })
-      .sort({ createdAt: -1 })
-      .limit(50);
+    const created = await Customer.create({
+      ownerId,
+      name: String(name).trim(),
+      contact: String(contact).trim(),
+      issue: String(issue).trim(),
+      notes: String(notes).trim(),
+    });
 
-    return res.json(results);
+    res.status(201).json(created);
   } catch (err) {
-    console.error("SEARCH_FAILED:", err);
-    return res.status(500).json({ error: "Search failed" });
+    console.error("POST /api/customers error:", err);
+    res.status(500).json({ error: "Failed to create customer" });
   }
 });
 
-/** Example: other routes AFTER search */
+/**
+ * GET /api/customers
+ * List all customers for logged-in user
+ */
 router.get("/", requireAuth, async (req, res) => {
-  const customers = await Customer.find({ ownerId: req.user.userId }).sort({ createdAt: -1 });
-  res.json({ customers });
+  try {
+    const ownerId = req.user.userId;
+    const items = await Customer.find({ ownerId }).sort({ createdAt: -1 });
+    res.json(items);
+  } catch (err) {
+    console.error("GET /api/customers error:", err);
+    res.status(500).json({ error: "Failed to load customers" });
+  }
 });
 
-/** ✅ Put "/:id" LAST and guard it */
-router.get("/:id", requireAuth, async (req, res) => {
+/**
+ * GET /api/customers/search?query=jay
+ * Regex search (no Atlas text index required)
+ */
+router.get("/search", requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "Invalid id" });
-    }
+    const ownerId = req.user.userId;
+    const q = String(req.query.query || "").trim();
+    if (!q) return res.status(400).json({ error: "Query is required" });
 
-    const c = await Customer.findOne({ _id: id, ownerId: req.user.userId });
-    if (!c) return res.status(404).json({ error: "Not found" });
-    res.json(c);
+    const safe = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(safe, "i");
+
+    const results = await Customer.find({
+      ownerId,
+      $or: [{ name: re }, { contact: re }, { issue: re }, { notes: re }],
+    }).sort({ createdAt: -1 });
+
+    res.json(results);
   } catch (err) {
-    console.error("GET_BY_ID_FAILED:", err);
-    res.status(500).json({ error: "Failed" });
+    console.error("GET /api/customers/search error:", err);
+    res.status(500).json({ error: "Search failed" });
   }
 });
 
