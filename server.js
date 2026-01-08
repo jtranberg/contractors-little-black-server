@@ -33,6 +33,9 @@ app.use(
 
 app.use(express.json());
 
+app.get("/", (req, res) => res.json({ ok: true, service: "contractors-api" }));
+
+
 // Routes
 app.use("/api", authRoutes);
 app.use("/api", loginRoutes);
