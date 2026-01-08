@@ -1,0 +1,58 @@
+# --------------------
+# Node / JS
+# --------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --------------------
+# Environment variables
+# --------------------
+.env
+.env.*
+!.env.example
+
+# --------------------
+# Vite / React
+# --------------------
+dist/
+.vite/
+.cache/
+
+# --------------------
+# Build outputs
+# --------------------
+build/
+out/
+
+# --------------------
+# OS / Editor
+# --------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --------------------
+# Logs
+# --------------------
+logs/
+*.log
+
+# --------------------
+# Render / Netlify
+# --------------------
+.netlify/
+.render/
+
+# --------------------
+# Optional: coverage / tests
+# --------------------
+coverage/
+
+# --------------------
+# Mongo / misc
+# --------------------
+*.pem
+*.key
